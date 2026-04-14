@@ -68,8 +68,8 @@ with st.form("weather_form"):
     selected_date = st.date_input("Date (dd/mm/yy)", value=datetime.now().date())
     
     # Extract Y/M/D
-    date_obj = pd.to_datetime(selected_date)
-    year, month, day = date_obj.year, date_obj.month, date_obj.day
+    # date_obj = pd.to_datetime(selected_date)
+    # year, month, day = date_obj.year, date_obj.month, date_obj.day
     
     st.markdown("### 🌡️ Weather Inputs (10 fields only)")
     
@@ -95,7 +95,7 @@ with st.form("weather_form"):
     with col2: wind3pm = st.number_input("Wind Speed 3PM (km/h)", 0.0, 100.0, 15.0)
     
     rain_today = st.selectbox("Rain Today?", [0, 1], format_func=lambda x: "No" if x==0 else "Yes")
-    location_encoded = st.number_input("Location (0-50 encoded)", 0, 50, 0)
+    # location_encoded = st.number_input("Location (0-50 encoded)", 0, 50, 0)
     
     predict = st.form_submit_button("🔮 Predict Tomorrow", use_container_width=True)
 
@@ -106,7 +106,7 @@ if predict:
     try:
         # Build input matching model
         input_data = {
-            feature_columns[0]: location_encoded,  # Location
+            # feature_columns[0]: location_encoded,  # Location
             feature_columns[1]: min_temp,
             feature_columns[2]: max_temp,
             feature_columns[3]: humidity9am,
@@ -116,9 +116,9 @@ if predict:
             feature_columns[7]: wind9am,
             feature_columns[8]: wind3pm,
             feature_columns[9]: rain_today,
-            feature_columns[10]: year,
-            feature_columns[11]: month,
-            feature_columns[12]: day
+            # feature_columns[10]: year,
+            # feature_columns[11]: month,
+            # feature_columns[12]: day
         }
         
         input_df = pd.DataFrame([input_data], columns=feature_columns)
