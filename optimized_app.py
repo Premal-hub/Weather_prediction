@@ -74,8 +74,8 @@ DEFAULT_VALUES = {
 # =========================================================
 # MODEL FEATURES ONLY - Clean Labels
 # =========================================================
-FEATURE_LABELS = {
-    'Location': 'Location (Encoded)',
+# FEATURE_LABELS = {
+#     'Location': 'Location (Encoded)',
     'MinTemp': 'Minimum Temperature (°C)',
     'MaxTemp': 'Maximum Temperature (°C)',
     'Humidity9am': 'Humidity at 9 AM (%)',
@@ -85,16 +85,16 @@ FEATURE_LABELS = {
     'WindSpeed9am': 'Wind Speed 9 AM (km/h)',
     'WindSpeed3pm': 'Wind Speed 3 PM (km/h)',
     'RainToday': 'Rain Today?',
-    'Year': 'Year',
-    'Month': 'Month (1-12)',
-    'Day': 'Day (1-31)'
+    # 'Year': 'Year',
+    # 'Month': 'Month (1-12)',
+    # 'Day': 'Day (1-31)'
 }
 
 # =========================================================
 # MODEL FEATURES ONLY - Input Ranges
 # =========================================================
 INPUT_CONFIG = {
-    'Location': {'min': 0, 'max': 50, 'step': 1},  # Adjust based on unique locations
+    # 'Location': {'min': 0, 'max': 50, 'step': 1},  # Adjust based on unique locations
     'MinTemp': {'min': -10, 'max': 50, 'step': 0.1},
     'MaxTemp': {'min': 0, 'max': 60, 'step': 0.1},
     'Humidity9am': {'min': 0, 'max': 100, 'step': 1},
@@ -103,9 +103,9 @@ INPUT_CONFIG = {
     'Pressure3pm': {'min': 900, 'max': 1100, 'step': 0.1},
     'WindSpeed9am': {'min': 0, 'max': 100, 'step': 1},
     'WindSpeed3pm': {'min': 0, 'max': 100, 'step': 1},
-    'Year': {'min': 2020, 'max': 2030, 'step': 1},
-    'Month': {'min': 1, 'max': 12, 'step': 1},
-    'Day': {'min': 1, 'max': 31, 'step': 1}
+    # 'Year': {'min': 2020, 'max': 2030, 'step': 1},
+    # 'Month': {'min': 1, 'max': 12, 'step': 1},
+    # 'Day': {'min': 1, 'max': 31, 'step': 1}
 }
 
 # =========================================================
