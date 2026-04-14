@@ -293,7 +293,10 @@ with st.form("prediction_form"):
     # Split inputs into 3 columns for professional layout
     col1, col2, col3 = st.columns(3)
 
-    for idx, feature in enumerate(feature_columns):
+    hidden_features = ["Location", "Year", "Month", "Day"]
+    visible_features = [f for f in feature_columns if f not in hidden_features]
+
+    for idx, feature in enumerate(visible_features):
         if idx % 3 == 0:
             with col1:
                 user_input[feature] = create_input_widget(feature)
@@ -303,6 +306,19 @@ with st.form("prediction_form"):
         else:
             with col3:
                 user_input[feature] = create_input_widget(feature)
+
+    # Provide safe default values for removed features
+    now = datetime.now()
+    for feature in hidden_features:
+        if feature in feature_columns:
+            if feature == "Year":
+                user_input[feature] = now.year
+            elif feature == "Month":
+                user_input[feature] = now.month
+            elif feature == "Day":
+                user_input[feature] = now.day
+            elif feature == "Location":
+                user_input[feature] = 0
 
     st.markdown("")
     predict_button = st.form_submit_button("🔍 Predict Rain Forecast", use_container_width=True)
