@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import io
 from datetime import datetime
 
 # =========================================================
@@ -217,21 +218,12 @@ with st.sidebar:
     st.markdown("### Machine Learning Based Rain Prediction")
     st.markdown("---")
 
-    st.info(
-        """
-        **How it works:**
-        - Enter weather parameters
-        - Click **Predict Rain Forecast**
-        - The trained ML model predicts whether it will rain tomorrow
-        """
-    )
-
-    st.markdown("---")
-    st.markdown("### 📁 Required Files")
-    st.caption("Keep these files in the same folder:")
-    st.code(
-        "app.py\nbest_raincast_model.pkl\nraincast_scaler.pkl\nraincast_feature_columns.pkl",
-        language="bash"
+    app_mode = st.radio(
+        "Select Mode",
+        options=[
+            "🔮 Manual Prediction",
+            "🔍 Bulk Scanner"
+        ]
     )
 
 # =========================================================
@@ -266,6 +258,128 @@ except Exception as e:
     st.error(f"❌ Failed to load model resources: {e}")
     st.stop()
 
+if app_mode == "🔍 Bulk Scanner":
+    st.markdown("### 1. Download Sample Templates")
+    
+    # Sample layout for template download
+    template_data = {
+        "MinTemp": [15.0], "MaxTemp": [25.0], "Rainfall": [0.0], 
+        "Humidity9am": [60.0], "Humidity3pm": [55.0], "Pressure9am": [1015.0], 
+        "Pressure3pm": [1012.0], "Cloud9am": [4.0], "Cloud3pm": [5.0], 
+        "Temp9am": [18.0], "Temp3pm": [24.0], "RainToday": [0]
+    }
+    df_template = pd.DataFrame(template_data)
+    
+    template_csv = df_template.to_csv(index=False).encode('utf-8')
+    
+    output_excel = io.BytesIO()
+    try:
+        with pd.ExcelWriter(output_excel, engine='openpyxl') as writer:
+            df_template.to_excel(writer, index=False, sheet_name='Template')
+        template_excel = output_excel.getvalue()
+        excel_available = True
+    except ImportError:
+        excel_available = False
+    
+    template_json = df_template.to_json(orient='records', indent=4)
+    
+    st.markdown("Choose your preferred format for the sample template:")
+    col_dl1, col_dl2, col_dl3 = st.columns(3)
+    
+    with col_dl1:
+        st.download_button(
+            label="📄 Download CSV",
+            data=template_csv,
+            file_name="sample_template.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    with col_dl2:
+        if excel_available:
+            st.download_button(
+                label="📊 Download Excel",
+                data=template_excel,
+                file_name="sample_template.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        else:
+            st.button("📊 Excel (openpyxl rqd)", disabled=True, use_container_width=True)
+    with col_dl3:
+        st.download_button(
+            label="{ } Download JSON",
+            data=template_json,
+            file_name="sample_template.json",
+            mime="application/json",
+            use_container_width=True
+        )
+
+    st.markdown("### 2. Upload File to Scan")
+    uploaded_file = st.file_uploader("Choose a file", type=["csv", "xlsx", "json"])
+    
+    if uploaded_file is not None:
+        try:
+            # Read file based on extension
+            if uploaded_file.name.endswith('.csv'):
+                df_upload = pd.read_csv(uploaded_file)
+            elif uploaded_file.name.endswith('.xlsx'):
+                df_upload = pd.read_excel(uploaded_file)
+            elif uploaded_file.name.endswith('.json'):
+                df_upload = pd.read_json(uploaded_file)
+            else:
+                st.error("Unsupported file format.")
+                st.stop()
+
+            st.markdown("#### 📄 File Preview (Top 3 Rows):")
+            st.dataframe(df_upload.head(3), use_container_width=True)
+
+            if st.button("🔍 Predict Bulk Forecast", type="primary"):
+                with st.spinner("Scanning file and predicting..."):
+                    # Process predictions
+                    pred_df = df_upload.copy()
+                    
+                    # Ensure all feature columns are present and strictly numeric 
+                    # to prevent crashes (e.g. string Location 'Mumbai' converted safely to 0)
+                    for col in feature_columns:
+                        if col not in pred_df.columns:
+                            pred_df[col] = 0 
+                        else:
+                            pred_df[col] = pd.to_numeric(pred_df[col], errors='coerce').fillna(0)
+                            
+                    input_scaled = scaler.transform(pred_df[feature_columns])
+                    predictions = model.predict(input_scaled)
+                    
+                    # Add prediction column
+                    df_upload['RainPrediction'] = ["Rain Predicted" if p == 1 else "No Rain" for p in predictions]
+                    
+                st.success("✅ Scanning Complete!")
+                
+                # Provide download results
+                st.markdown("### 3. Download Results")
+                
+                csv_result = df_upload.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download Predicted Data",
+                    data=csv_result,
+                    file_name=f"predicted_{uploaded_file.name.split('.')[0]}.csv",
+                    mime="text/csv"
+                )
+                
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+
+    st.markdown("---")
+    st.markdown(
+        """
+        <div class="footer-text">
+            Built with ❤️ using <b>Streamlit</b>, <b>Scikit-learn</b>, and <b>Machine Learning</b><br>
+            Project: <b>RainCast - Rain Forecast Prediction System</b>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.stop()
+
 # =========================================================
 # TOP METRICS / INFO
 # =========================================================
@@ -288,6 +402,14 @@ st.markdown("---")
 st.markdown('<div class="section-title">📝 Enter Weather Parameters</div>', unsafe_allow_html=True)
 
 with st.form("prediction_form"):
+    st.markdown("### General Information")
+    top_col1, top_col2 = st.columns(2)
+    with top_col1:
+        ui_location = st.text_input("📍 Location", placeholder="e.g. Surat")
+    with top_col2:
+        ui_date = st.date_input("📅 Date", value=datetime.today())
+        
+    st.markdown("### Weather Details")
     user_input = {}
 
     # Split inputs into 3 columns for professional layout
@@ -308,15 +430,14 @@ with st.form("prediction_form"):
                 user_input[feature] = create_input_widget(feature)
 
     # Provide safe default values for removed features
-    now = datetime.now()
     for feature in hidden_features:
         if feature in feature_columns:
             if feature == "Year":
-                user_input[feature] = now.year
+                user_input[feature] = ui_date.year
             elif feature == "Month":
-                user_input[feature] = now.month
+                user_input[feature] = ui_date.month
             elif feature == "Day":
-                user_input[feature] = now.day
+                user_input[feature] = ui_date.day
             elif feature == "Location":
                 user_input[feature] = 0
 
@@ -388,10 +509,12 @@ if predict_button:
         st.progress(min(int(rain_probability), 100))
 
         # Friendly message
+        display_loc = ui_location if ui_location else "this location"
+        formatted_date = ui_date.strftime('%B %d, %Y')
         if prediction == 1:
-            st.warning("⚠️ The model predicts that it is likely to rain tomorrow.")
+            st.warning(f"⚠️ The model predicts that it is likely to rain in **{display_loc}** around **{formatted_date}**.")
         else:
-            st.info("ℹ️ The model predicts that rain is unlikely tomorrow.")
+            st.info(f"ℹ️ The model predicts that rain is unlikely in **{display_loc}** around **{formatted_date}**.")
 
         # Recommendation box
         st.markdown("### 📌 Recommendation")
@@ -399,10 +522,21 @@ if predict_button:
 
         # Show input summary (optional but professional)
         with st.expander("🔎 View Submitted Input Summary"):
+            display_df = input_df.copy()
+            if "Location" in display_df.columns:
+                display_df["Location"] = ui_location if ui_location else "Not Specified"
+                
             summary_df = pd.DataFrame({
-                "Feature": input_df.columns,
-                "Value": input_df.iloc[0].values
+                "Feature": display_df.columns,
+                "Value": display_df.iloc[0].values
             })
+            
+            # Force string type for PyArrow serialization stability inside Streamlit
+            summary_df["Value"] = summary_df["Value"].astype(str)
+            
+            # Append human-readable date to the display DataFrame
+            summary_df.loc[len(summary_df)] = ["Selected Date", ui_date.strftime('%B %d, %Y')]
+            
             st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
     except Exception as e:
